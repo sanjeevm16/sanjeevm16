@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 POLICIES = [
     {
         "title": "Guest Verification Policy",
-        "content": "To verify a guest's identity, the guest must provide their full name and booking confirmation number. Once provided, check database/records and retrieve any open case details."
+        "content": "To verify a guest's identity, the guest must provide their full name, booking confirmation number, and email address. Once provided, check database/records and retrieve any open case details."
     },
     {
         "title": "Complaint Tier 0: Minor Preference",
@@ -80,6 +80,26 @@ def search_policies(query: str) -> str:
     scored.sort(key=lambda x: x[0], reverse=True)
     results = [f"Title: {item['title']}\nContent: {item['content']}" for sim, item in scored if sim >= 0.3]
     return "\n\n".join(results[:3]) if results else "No matching policies found."
+
+
+def send_email(to_address: str, subject: str, body: str) -> str:
+    """Sends an email to the specified address. Use this for notifications, especially for Tier 3 policy resolutions.
+    
+    Args:
+        to_address: The recipient's email address.
+        subject: The subject of the email.
+        body: The body content of the email.
+        
+    Returns:
+        A confirmation message.
+    """
+    # In a real application, this would use an SMTP library or an email API.
+    # For this demo, we will log the email details.
+    print(f"SIMULATED EMAIL SENT TO {to_address}")
+    print(f"Subject: {subject}")
+    print(f"Body: {body}")
+    logger.info(f"SIMULATED EMAIL SENT TO {to_address}")
+    return f"Email successfully sent to {to_address}."
 
 
 class VectorMemoryService(BaseMemoryService):
@@ -192,15 +212,17 @@ You are guiding a guest through a support ticket resolution flow. The flow is in
 
 Please follow these 6 steps sequentially in your conversation:
 1. Guest submits a complaint: Promptly listen to their concerns.
-2. Agent verifies identity: Politely ask for their full name and booking confirmation number to retrieve case details.
+2. Agent verifies identity: Politely ask for their full name, booking confirmation number, and email address to retrieve case details.
 3. Agent categorizes the complaint: Use the knowledge base policy search tool to find the appropriate complaint tier (Tier 0, 1, 2, or 3).
 4. Agent offers a resolution: Search the knowledge base to propose the designated refund or compensation options based on the tier.
 5. Guest selects their preferred option: Guide them to make a selection.
 6. Case is closed: Confirm the choice, finalize details, and close the ticket.
 
 To retrieve policies, always use the search_policies tool.
+
+For Tier 3 complaints (Major Disruption), you MUST send a notification email to the guest using the send_email tool once the resolution is offered or finalized. The email should use a soft, empathetic, and professional tone, acknowledging the inconvenience and confirming the resolution details.
 """,
-    tools=[preload_memory, search_policies]
+    tools=[preload_memory, search_policies, send_email]
 )
 
 # Initialize the persistent Runner
