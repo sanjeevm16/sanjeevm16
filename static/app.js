@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const voiceSelect = document.getElementById('voice-select');
     const status = document.getElementById('status');
 
-    const openMouthImg = `/static/images/char-mouth-open.png?v=${sessionId}`;
-    const closedMouthImg = `/static/images/char-mouth-closed.png?v=${sessionId}`;
+    const openMouthImg = `/static/images/char-mouth-open.svg?v=${sessionId}`;
+    const closedMouthImg = `/static/images/char-mouth-closed.svg?v=${sessionId}`;
 
     // Apply cache-busted source immediately and preload images
     characterImage.src = closedMouthImg;
