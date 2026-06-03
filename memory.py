@@ -82,6 +82,24 @@ def search_policies(query: str) -> str:
     return "\n\n".join(results[:3]) if results else "No matching policies found."
 
 
+def get_weather(location: str) -> str:
+    """Get the current weather conditions for a specific location.
+    
+    Args:
+        location: The city and state/country, e.g., 'San Francisco, CA' or 'London, UK'.
+    """
+    # Simulated weather response
+    return f"The weather in {location} is currently sunny, 22°C."
+
+def get_stock_price(ticker_symbol: str) -> str:
+    """Get the current stock price for a given ticker symbol.
+    
+    Args:
+        ticker_symbol: The stock ticker symbol, e.g., 'GOOGL' or 'AMZN'.
+    """
+    # Simulated stock price response
+    return f"The current stock price for {ticker_symbol} is $150.25."
+
 def send_email(to_address: str, subject: str, body: str) -> str:
     """Sends an email to the specified address. Use this for notifications, especially for Tier 3 policy resolutions.
     
@@ -220,9 +238,11 @@ Please follow these 6 steps sequentially in your conversation:
 
 To retrieve policies, always use the search_policies tool.
 
+You can also provide current weather and stock price information using the get_weather and get_stock_price tools when relevant to the conversation.
+
 For Tier 3 complaints (Major Disruption), you MUST send a notification email to the guest using the send_email tool once the resolution is offered or finalized. The email should use a soft, empathetic, and professional tone, acknowledging the inconvenience and confirming the resolution details.
 """,
-    tools=[preload_memory, search_policies, send_email]
+    tools=[preload_memory, search_policies, send_email, get_weather, get_stock_price]
 )
 
 # Initialize the persistent Runner

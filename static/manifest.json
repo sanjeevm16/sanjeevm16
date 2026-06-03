@@ -1,0 +1,10 @@
+{
+  "name": "AI Companion",
+  "short_name": "Companion",
+  "description": "Multi-domain voice companion for Hospitality, Public Sector, Healthcare, and Manufacturing.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2e86de",
+  "orientation": "portrait"
+}

@@ -4,28 +4,51 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionId = Math.random().toString(36).substring(2, 15);
         localStorage.setItem('sessionId', sessionId);
     }
+
+    const chatCard = document.getElementById('chat-card');
+    const chatBody = document.getElementById('chat-body');
     const textInput = document.getElementById('text-input');
     const sendButton = document.getElementById('send-button');
-    const characterImage = document.getElementById('character-image');
+    const avatarContainer = document.getElementById('avatar-container');
+    const avatarMouth = document.getElementById('avatar-mouth');
     const voiceSelect = document.getElementById('voice-select');
-    const status = document.getElementById('status');
+    const companionTitle = document.getElementById('companion-title');
+    const thinkingRow = document.getElementById('thinking-row');
+    const tabButtons = document.querySelectorAll('.tab-btn');
 
-    const openMouthImg = `/static/images/char-mouth-open.svg?v=${sessionId}`;
-    const closedMouthImg = `/static/images/char-mouth-closed.svg?v=${sessionId}`;
-
-    // Apply cache-busted source immediately and preload images
-    characterImage.src = closedMouthImg;
-    const preloadOpen = new Image();
-    preloadOpen.src = openMouthImg;
-    const preloadClosed = new Image();
-    preloadClosed.src = closedMouthImg;
-
+    let currentIndustry = 'hospitality';
     let voices = [];
     let lipSyncInterval;
+    let typewriterTimeout;
+
+    const greetings = {};
+    greetings.hospitality = "Hello! I'm your Hospitality Companion. " +
+        "How can I assist you with booking or guest queries today?";
+    greetings.public_sector = "Welcome to Citizen Support. " +
+        "How can I help you with permits, city forms, or civic compliance services today?";
+    greetings.hospitals = "Hello, I am your Healthcare Assistant. " +
+        "How can I check your appointments, billing details, or record requests today?";
+    greetings.manufacturing = "Operations Support System active. " +
+        "Please submit shipment tracking requests, order details, or parts queries.";
+
+    const titles = {};
+    titles.hospitality = "Hospitality Companion";
+    titles.public_sector = "Public Sector Companion";
+    titles.hospitals = "Healthcare Companion";
+    titles.manufacturing = "Manufacturing Companion";
+
+    const thinkingPhrases = {};
+    thinkingPhrases.hospitality = "Checking details.";
+    thinkingPhrases.public_sector = "Accessing records.";
+    thinkingPhrases.hospitals = "Retrieving record.";
+    thinkingPhrases.manufacturing = "Querying data.";
 
     function populateVoiceList() {
         const allVoices = speechSynthesis.getVoices();
         voices = allVoices.filter(voice => voice.name.includes('Google'));
+        if (voices.length === 0) {
+            voices = allVoices;
+        }
         voiceSelect.innerHTML = '';
 
         let usVoiceIndex = -1;
@@ -38,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
             voiceSelect.appendChild(option);
 
             if (voice.lang === 'en-US') {
-                if (usVoiceIndex === -1) { // Find the first US voice
+                if (usVoiceIndex === -1) {
                     usVoiceIndex = i;
                 }
             }
@@ -54,35 +77,85 @@ document.addEventListener('DOMContentLoaded', () => {
         speechSynthesis.onvoiceschanged = populateVoiceList;
     }
 
-    const typewriter = (text, element, speed = 50) => {
-        // Use Intl.Segmenter to handle grapheme clusters correctly
+    // Toggle Industry Tabs
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const industry = button.getAttribute('data-industry');
+            if (industry === currentIndustry) return;
+
+            // Reset talking / typing
+            if (speechSynthesis.speaking) {
+                speechSynthesis.cancel();
+            }
+            if (typewriterTimeout) {
+                clearTimeout(typewriterTimeout);
+            }
+            clearInterval(lipSyncInterval);
+            avatarMouth.setAttribute('y', '130');
+            avatarMouth.setAttribute('height', '5');
+            avatarMouth.setAttribute('rx', '2.5');
+            avatarContainer.classList.remove('speaking');
+
+            // Toggle active tabs
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            // Update UI properties
+            currentIndustry = industry;
+            chatCard.setAttribute('data-theme', industry);
+            companionTitle.textContent = titles[industry];
+
+            // Re-render chat messages with greeting
+            chatBody.innerHTML = '';
+            const greetRow = document.createElement('div');
+            greetRow.className = 'message-row bot';
+            greetRow.innerHTML = `<div class="message-bubble">${greetings[industry]}</div>`;
+            chatBody.appendChild(greetRow);
+            chatBody.scrollTop = chatBody.scrollHeight;
+        });
+    });
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    const typewriter = (text, element, speed = 35) => {
+        if (typewriterTimeout) {
+            clearTimeout(typewriterTimeout);
+        }
+
+        let segmentIndex = 0;
+        element.innerHTML = "";
+
         if (window.Intl && Intl.Segmenter) {
             const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
             const segments = Array.from(segmenter.segment(text)).map(s => s.segment);
-            
-            let i = 0;
-            element.innerHTML = "";
 
-            function type() {
-                if (i < segments.length) {
-                    element.innerHTML += segments[i];
-                    i++;
-                    setTimeout(type, speed);
+            function typeGrapheme() {
+                if (segmentIndex < segments.length) {
+                    element.innerHTML += segments[segmentIndex];
+                    segmentIndex++;
+                    chatBody.scrollTop = chatBody.scrollHeight;
+                    typewriterTimeout = setTimeout(typeGrapheme, speed);
+                } else {
+                    typewriterTimeout = null;
                 }
             }
-            type();
+            typeGrapheme();
         } else {
-            // Fallback for older browsers
-            let i = 0;
-            element.innerHTML = "";
-            function type() {
-                if (i < text.length) {
-                    element.innerHTML += text.charAt(i);
-                    i++;
-                    setTimeout(type, speed);
+            function typeChar() {
+                if (segmentIndex < text.length) {
+                    element.innerHTML += text.charAt(segmentIndex);
+                    segmentIndex++;
+                    chatBody.scrollTop = chatBody.scrollHeight;
+                    typewriterTimeout = setTimeout(typeChar, speed);
+                } else {
+                    typewriterTimeout = null;
                 }
             }
-            type();
+            typeChar();
         }
     };
 
@@ -91,31 +164,47 @@ document.addEventListener('DOMContentLoaded', () => {
             speechSynthesis.cancel();
         }
         clearInterval(lipSyncInterval);
+        avatarContainer.classList.remove('speaking');
 
-        const utterance = new SpeechSynthesisUtterance(text);
+        if (!voiceSelect.selectedOptions || voiceSelect.selectedOptions.length === 0) {
+            return;
+        }
+
         const selectedOption = voiceSelect.selectedOptions[0].getAttribute('data-name');
         const selectedVoice = voices.find(voice => voice.name === selectedOption);
+
+        const utterance = new SpeechSynthesisUtterance(text);
         if (selectedVoice) {
             utterance.voice = selectedVoice;
         }
 
         utterance.onstart = () => {
+            avatarContainer.classList.add('speaking');
             let mouthOpen = true;
             lipSyncInterval = setInterval(() => {
-                characterImage.src = mouthOpen ? openMouthImg : closedMouthImg;
+                if (mouthOpen) {
+                    avatarMouth.setAttribute('y', '120');
+                    avatarMouth.setAttribute('height', '30');
+                    avatarMouth.setAttribute('rx', '15');
+                } else {
+                    avatarMouth.setAttribute('y', '130');
+                    avatarMouth.setAttribute('height', '5');
+                    avatarMouth.setAttribute('rx', '2.5');
+                }
                 mouthOpen = !mouthOpen;
             }, 150);
         };
 
-        utterance.onend = () => {
+        const stopSpeaking = () => {
             clearInterval(lipSyncInterval);
-            characterImage.src = closedMouthImg;
+            avatarContainer.classList.remove('speaking');
+            avatarMouth.setAttribute('y', '130');
+            avatarMouth.setAttribute('height', '5');
+            avatarMouth.setAttribute('rx', '2.5');
         };
 
-        utterance.onerror = () => {
-            clearInterval(lipSyncInterval);
-            characterImage.src = closedMouthImg;
-        };
+        utterance.onend = stopSpeaking;
+        utterance.onerror = stopSpeaking;
 
         speechSynthesis.speak(utterance);
     };
@@ -124,17 +213,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const message = textInput.value.trim();
         if (!message) return;
 
+        // Unlock audio context on mobile (iOS/Safari/Android) using a sync speech trigger
+        speak(thinkingPhrases[currentIndustry]);
+
+        // Render user bubble
+        const userRow = document.createElement('div');
+        userRow.className = 'message-row user';
+        userRow.innerHTML = `<div class="message-bubble">${escapeHtml(message)}</div>`;
+        chatBody.appendChild(userRow);
+
         textInput.value = '';
-        textInput.style.height = '50px';
-        status.textContent = "Thinking...";
+        textInput.style.height = 'auto';
+        chatBody.scrollTop = chatBody.scrollHeight;
+
+        // Display thinking loader
+        thinkingRow.style.display = 'flex';
+        chatBody.scrollTop = chatBody.scrollHeight;
 
         try {
+            const payload = {};
+            payload.message = message;
+            payload.session_id = sessionId;
+            payload.industry = currentIndustry;
+
             const response = await fetch('/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ message: message, session_id: sessionId }),
+                body: JSON.stringify(payload),
             });
 
             if (!response.ok) {
@@ -142,12 +249,29 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const data = await response.json();
-            typewriter(data.response, status);
+            thinkingRow.style.display = 'none';
+
+            // Render bot bubble
+            const botRow = document.createElement('div');
+            botRow.className = 'message-row bot';
+            botRow.innerHTML = `<div class="message-bubble"></div>`;
+            chatBody.appendChild(botRow);
+
+            const bubble = botRow.querySelector('.message-bubble');
+            typewriter(data.response, bubble);
             speak(data.response);
         } catch (error) {
             console.error('Error:', error);
+            thinkingRow.style.display = 'none';
+
             const errorMessage = 'Sorry, something went wrong. Please try again.';
-            typewriter(errorMessage, status);
+            const botRow = document.createElement('div');
+            botRow.className = 'message-row bot';
+            botRow.innerHTML = `<div class="message-bubble"></div>`;
+            chatBody.appendChild(botRow);
+
+            const bubble = botRow.querySelector('.message-bubble');
+            typewriter(errorMessage, bubble);
             speak(errorMessage);
         }
     };

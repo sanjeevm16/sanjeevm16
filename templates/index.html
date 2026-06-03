@@ -2,27 +2,501 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Companion</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>AI Companion - Multi-Domain Assistant</title>
+    <!-- iOS / PWA / Android Mobile Ready meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#ee5253">
+    <link rel="manifest" href="/static/manifest.json">
+    <!-- Beautiful Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f0f0f0; }
-        #chat-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 400px; text-align: center; }
-        #character-image { width: 200px; height: 200px; margin-bottom: 20px; border-radius: 50%; background: #ddd; object-fit: cover; }
-        #status { min-height: 50px; margin-bottom: 20px; color: #333; }
-        #text-input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; margin-bottom: 10px; resize: none; }
-        #send-button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        #send-button:hover { background: #0056b3; }
-        #voice-select { margin-top: 10px; width: 100%; padding: 5px; }
+        :root {
+            /* Default Hospitality Theme Colors */
+            --bg-gradient: linear-gradient(135deg, #2c1a04 0%, #8e44ad 100%);
+            --theme-accent: #9b59b6;
+            --theme-accent-hover: #8e44ad;
+            --bg-card: rgba(255, 255, 255, 0.9);
+            --text-main: #2c3e50;
+            --text-muted: #7f8c8d;
+            --bubble-user: #9b59b6;
+            --bubble-bot: #f1f2f6;
+            --border-radius: 16px;
+        }
+
+        /* Hospitality Theme */
+        [data-theme="hospitality"] {
+            --bg-gradient: linear-gradient(135deg, #ff9f43 0%, #ff5252 100%);
+            --theme-accent: #ee5253;
+            --theme-accent-hover: #d63031;
+            --bubble-user: #ee5253;
+        }
+
+        /* Public Sector Theme */
+        [data-theme="public_sector"] {
+            --bg-gradient: linear-gradient(135deg, #2e86de 0%, #341f97 100%);
+            --theme-accent: #2e86de;
+            --theme-accent-hover: #0abde3;
+            --bubble-user: #2e86de;
+        }
+
+        /* Hospitals Theme */
+        [data-theme="hospitals"] {
+            --bg-gradient: linear-gradient(135deg, #10ac84 0%, #01a3a4 100%);
+            --theme-accent: #10ac84;
+            --theme-accent-hover: #1dd1a1;
+            --bubble-user: #10ac84;
+        }
+
+        /* Manufacturing Theme */
+        [data-theme="manufacturing"] {
+            --bg-gradient: linear-gradient(135deg, #576574 0%, #222f3e 100%);
+            --theme-accent: #f39c12;
+            --theme-accent-hover: #e67e22;
+            --bubble-user: #f39c12;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            transition: background 0.8s ease;
+        }
+
+        #chat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: var(--border-radius);
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 500px;
+            height: 90vh;
+            height: 90dvh;
+            max-height: 800px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Mobile Responsive Viewport Fixes */
+        @media (max-width: 600px) {
+            body {
+                padding: 0;
+            }
+            #chat-card {
+                height: 100vh;
+                height: 100dvh;
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
+                max-height: 100%;
+            }
+            .chat-footer {
+                padding-bottom: calc(15px + env(safe-area-inset-bottom));
+            }
+        }
+
+        /* Tabs Header */
+        .tabs-header {
+            display: flex;
+            background: rgba(0, 0, 0, 0.04);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            padding: 5px;
+            gap: 4px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            padding: 10px 5px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .tab-btn:hover {
+            background: rgba(0, 0, 0, 0.03);
+            color: var(--text-main);
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: var(--theme-accent);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Character Area */
+        .character-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 20px 10px 20px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.4), transparent);
+            position: relative;
+        }
+
+        .avatar-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+            transition: transform 0.3s ease;
+        }
+
+        .avatar-container:hover {
+            transform: scale(1.05);
+        }
+
+        .avatar-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .avatar-base {
+            transition: fill 0.4s ease;
+        }
+
+        .avatar-mouth {
+            transition: all 0.15s ease;
+        }
+
+        /* Speaking glow wave effect */
+        .avatar-container.speaking::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border-radius: 50%;
+            border: 3px solid var(--theme-accent);
+            animation: pulseWave 1.5s infinite;
+            pointer-events: none;
+        }
+
+        .companion-title {
+            margin-top: 10px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            text-align: center;
+            transition: color 0.3s ease;
+        }
+
+        .companion-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Chat Area */
+        .chat-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.4);
+            scroll-behavior: smooth;
+        }
+
+        /* Chat Bubbles */
+        .message-row {
+            display: flex;
+            width: 100%;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .message-row.user {
+            justify-content: flex-end;
+        }
+
+        .message-bubble {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+
+        .message-row.bot .message-bubble {
+            background: var(--bubble-bot);
+            color: var(--text-main);
+            border-top-left-radius: 4px;
+        }
+
+        .message-row.user .message-bubble {
+            background: var(--bubble-user);
+            color: white;
+            border-top-right-radius: 4px;
+            transition: background 0.3s ease;
+        }
+
+        /* Thinking Indicator */
+        .thinking-row {
+            display: none;
+            width: 100%;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .thinking-bubble {
+            background: var(--bubble-bot);
+            padding: 12px 20px;
+            border-radius: 18px;
+            border-top-left-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .thinking-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: waveDot 1.2s infinite ease-in-out;
+        }
+
+        .thinking-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .thinking-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        /* Footer Input Area */
+        .chat-footer {
+            padding: 15px 20px;
+            background: white;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        .textarea-container {
+            flex: 1;
+            background: #f8f9fa;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 24px;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            transition: border-color 0.3s ease;
+        }
+
+        .textarea-container:focus-within {
+            border-color: var(--theme-accent);
+        }
+
+        #text-input {
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px; /* Prevents auto-zoom on iOS Safari */
+            resize: none;
+            max-height: 100px;
+            min-height: 24px;
+            line-height: 1.4;
+            color: var(--text-main);
+        }
+
+        #send-button {
+            background: var(--theme-accent);
+            border: none;
+            outline: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+        }
+
+        #send-button:hover {
+            background: var(--theme-accent-hover);
+            transform: scale(1.05);
+        }
+
+        #send-button svg {
+            fill: white;
+            width: 18px;
+            height: 18px;
+            transform: translate(1px, 0px);
+        }
+
+        /* Voice Selector Styling */
+        .voice-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        #voice-select {
+            flex: 1;
+            padding: 6px 12px;
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 12px;
+            outline: none;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.8rem;
+            background: #f8f9fa;
+            color: var(--text-main);
+            cursor: pointer;
+        }
+
+        /* Keyframes */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulseWave {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.15); opacity: 0; }
+        }
+
+        @keyframes waveDot {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-6px); }
+        }
     </style>
 </head>
 <body>
-    <div id="chat-container">
-        <img id="character-image" src="" alt="Character">
-        <div id="status">Hello! I'm your AI companion. How can I help you today?</div>
-        <textarea id="text-input" placeholder="Type your message..."></textarea>
-        <button id="send-button">Send</button>
-        <select id="voice-select"></select>
+    <div id="chat-card" data-theme="hospitality">
+        <!-- Industry/Domain Selector Tabs -->
+        <div class="tabs-header">
+            <button class="tab-btn active" data-industry="hospitality" id="tab-hospitality">
+                <span>🏨</span>
+                <span>Hospitality</span>
+            </button>
+            <button class="tab-btn" data-industry="public_sector" id="tab-public-sector">
+                <span>🏛️</span>
+                <span>Public Sector</span>
+            </button>
+            <button class="tab-btn" data-industry="hospitals" id="tab-hospitals">
+                <span>🏥</span>
+                <span>Healthcare</span>
+            </button>
+            <button class="tab-btn" data-industry="manufacturing" id="tab-manufacturing">
+                <span>⚙️</span>
+                <span>Manufacturing</span>
+            </button>
+        </div>
+
+        <!-- Pulseable Character/Avatar Head Section -->
+        <div class="character-section">
+            <div class="avatar-container" id="avatar-container">
+                <!-- Inline SVG of Avatar for theme variable reactivity -->
+                <svg id="character-svg" class="avatar-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <circle class="avatar-base" cx="100" cy="100" r="90" fill="var(--theme-accent)" />
+                    <circle cx="70" cy="70" r="15" fill="white" />
+                    <circle cx="130" cy="70" r="15" fill="white" />
+                    <rect id="avatar-mouth" class="avatar-mouth" x="70" y="130" width="60" height="5" rx="2.5" fill="white" />
+                </svg>
+            </div>
+            <h1 class="companion-title" id="companion-title">Hospitality Companion</h1>
+            <div class="companion-subtitle" id="companion-subtitle">Status: Online</div>
+        </div>
+
+        <!-- Chat Scrolling Messages -->
+        <div class="chat-body" id="chat-body">
+            <!-- Initial Greeting Bubble -->
+            <div class="message-row bot">
+                <div class="message-bubble" id="initial-greeting">
+                    Hello! I'm your Hospitality Companion. How can I assist you with your booking or query today?
+                </div>
+            </div>
+        </div>
+
+        <!-- Thinking Loading Dot Bubble -->
+        <div class="thinking-row" id="thinking-row">
+            <div class="thinking-bubble">
+                <div class="thinking-dot"></div>
+                <div class="thinking-dot"></div>
+                <div class="thinking-dot"></div>
+            </div>
+        </div>
+
+        <!-- Footer Typing & Voice Input Area -->
+        <div class="chat-footer">
+            <div class="input-row">
+                <div class="textarea-container">
+                    <textarea id="text-input" placeholder="Type your message..." rows="1"></textarea>
+                </div>
+                <button id="send-button" title="Send message" aria-label="Send message">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
+            </div>
+            <!-- Interactive Voice Configuration -->
+            <div class="voice-section">
+                <span>Voice:</span>
+                <select id="voice-select" aria-label="Select companion voice"></select>
+            </div>
+        </div>
     </div>
+
+    <!-- Frontend logic script link -->
     <script src="/static/app.js"></script>
 </body>
 </html>
