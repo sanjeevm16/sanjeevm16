@@ -49,40 +49,26 @@ async def chat():
             app_name=runner.app_name, user_id="inapp_user", session_id=industry_session_id
         )
 
-    # Industry instructions mapped to 6-step ADK flow, split to stay under 100 chars
+    # Industry-specific persona adjustments that adapt the core 6-step flow
     industry_prompts = {
         'hospitality': (
-            "[System: You are in Hospitality mode. Follow the Guest Verification Policy, "
-            "complaint tiers, and offer resolutions. Keep the tone warm, welcoming, and helpful.] "
+            "[System: Hospitality Mode. Tone: Warm, welcoming, and helpful. "
+            "Focus on 'Guests' and 'Bookings'.] "
         ),
         'public_sector': (
-            "[System: You are in Public Sector / Government mode. Adapt the flow: "
-            "1. Citizen submits query/complaint. "
-            "2. Verify identity: Ask for full name, reference/permit number, and email. "
-            "3. Categorize query (Tier 0: Info request, Tier 1: Service delay, "
-            "Tier 2: Code violation/Permit issue, Tier 3: Critical infrastructure issue). "
-            "4. Offer resolution (Tier 3 requires email notification using send_email). "
-            "Maintain a formal, professional, and civic-minded tone.] "
+            "[System: Public Sector Mode. Tone: Formal, professional, and civic-minded. "
+            "Focus on 'Citizens' and 'Service Requests'. Identity verification: "
+            "Full Name, Reference/Permit Number, and Email.] "
         ),
         'hospitals': (
-            "[System: You are in Hospital / Healthcare mode. Adapt the flow: "
-            "1. Patient submits query/complaint. "
-            "2. Verify identity: Ask for full name, patient ID/DOB, and email. "
-            "3. Categorize query (Tier 0: General info, Tier 1: Appointment scheduling, "
-            "Tier 2: Billing discrepancy, Tier 3: Urgent medical record request / patient "
-            "complaint). "
-            "4. Offer resolution (Tier 3 requires email notification using send_email). "
-            "Be extremely empathetic, professional, and maintain confidentiality. "
-            "Never offer medical diagnoses.] "
+            "[System: Healthcare Mode. Tone: Extremely empathetic and professional. "
+            "Focus on 'Patients' and 'Care Quality'. Identity verification: "
+            "Full Name, Patient ID/DOB, and Email. Never offer medical diagnoses.] "
         ),
         'manufacturing': (
-            "[System: You are in Manufacturing / Supply Chain mode. Adapt the flow: "
-            "1. Supplier/Manager submits query (parts, logistics, maintenance). "
-            "2. Verify identity: Ask for full name, supplier/order number, and email. "
-            "3. Categorize issue (Tier 0: Status request, Tier 1: Delay, "
-            "Tier 2: Defect/shipment error, Tier 3: Production line stoppage/critical dispute). "
-            "4. Offer resolution (Tier 3 requires email notification using send_email). "
-            "Keep the tone operational, metrics-driven, and focused on logistics.] "
+            "[System: Manufacturing Mode. Tone: Operational, precise, and metrics-driven. "
+            "Focus on 'Suppliers/Managers' and 'Logistics/Orders'. Identity verification: "
+            "Full Name, Order Number, and Email.] "
         )
     }
 
