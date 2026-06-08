@@ -3,7 +3,7 @@ import os
 from google.adk.agents.llm_agent import LlmAgent
 
 root_agent = LlmAgent(
-    model='gemini-2.5-flash',
+    model='gemini-2.5-flash-lite',
     name='companion_agent',
     instruction="""You are the AI Companion, a friendly, empathetic, and highly efficient digital assistant designed to provide a seamless experience for guests.
 

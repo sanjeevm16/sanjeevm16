@@ -45,3 +45,10 @@ The following tools from `memory.py` will be wrapped as `@tool`:
 3.  **Graph Construction**: Define node functions and compile the `StateGraph`.
 4.  **Integration**: Update `app.py` to optionally use the LangGraph agent for chat requests.
 5.  **Validation**: Test the 6-step flow (Verification -> Triage -> Resolution).
+
+## Version History
+*   **v1.2 (2026-06-07)**: Refactored monolith agent into a **Multi-Agent Workflow**.
+    *   **Reasoning**: Decoupling Verification from Resolution improves prompt reliability by narrowing the focus of each agent. Using a custom `BaseAgent` subclass (`CompanionWorkflow`) allows for deterministic state-driven routing (routing to Resolution only after `is_verified` is True), reducing the chance of the model skipping steps or leaking policy info to unverified users.
+    *   **Architecture**: Added `VerificationAgent`, `ResolutionAgent`, and a `mark_as_verified` state-transition tool.
+*   **v1.1 (2026-06-07)**: Optimized ADK `search_policies` tool with cached embeddings and client persistence to reduce API latency.
+*   **v1.0 (Initial)**: Baseline ADK implementation featuring 6-step resolution workflow, vector-based long-term memory, and multi-industry support.

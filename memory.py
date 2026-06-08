@@ -2,16 +2,24 @@ import os
 import pickle
 import numpy as np
 import logging
+from typing import AsyncGenerator, Optional
+from typing_extensions import override
 from google import genai
 from google.adk.agents.llm_agent import LlmAgent
+from google.adk.agents.invocation_context import InvocationContext
+from google.adk.agents import BaseAgent
 from google.adk.sessions.database_session_service import DatabaseSessionService
 from google.adk.memory.base_memory_service import BaseMemoryService, SearchMemoryResponse
 from google.adk.memory.memory_entry import MemoryEntry
-from google.adk.sessions import Session
+from google.adk.sessions import Session, InMemorySessionService
 from google.adk.runners import Runner
 from google.adk.tools import preload_memory
+from google.adk.events import Event
 
 logger = logging.getLogger(__name__)
+
+# Global set for verified sessions (Reliable fallback for demo)
+VERIFIED_SESSIONS = set()
 
 # Prepopulated knowledge database policy articles
 POLICIES = [
@@ -37,6 +45,38 @@ POLICIES = [
     }
 ]
 
+# Global cache for policy embeddings and client
+_POLICY_EMBEDDINGS = None
+_GENAI_CLIENT = None
+
+def _get_genai_client():
+    global _GENAI_CLIENT
+    if _GENAI_CLIENT is None:
+        api_key = os.environ.get("GEMINI_API_KEY")
+        _GENAI_CLIENT = genai.Client(api_key=api_key)
+    return _GENAI_CLIENT
+
+def _get_policy_embeddings():
+    global _POLICY_EMBEDDINGS
+    if _POLICY_EMBEDDINGS is not None:
+        return _POLICY_EMBEDDINGS
+    
+    client = _get_genai_client()
+    embeddings = []
+    logger.info("Generating embeddings for knowledge base policies...")
+    for p in POLICIES:
+        try:
+            response = client.models.embed_content(
+                model="text-embedding-004",
+                contents=p["content"]
+            )
+            embeddings.append(np.array(response.embeddings[0].values))
+        except Exception as e:
+            logger.error(f"Error embedding policy '{p['title']}': {e}")
+            embeddings.append(None)
+    _POLICY_EMBEDDINGS = embeddings
+    return _POLICY_EMBEDDINGS
+
 def search_policies(query: str) -> str:
     """Searches the company knowledge base for refund policies, verification guidelines, and compensation tiers using vector similarity.
     
@@ -46,8 +86,7 @@ def search_policies(query: str) -> str:
     Returns:
         A list of matching policy articles.
     """
-    api_key = os.environ.get("GEMINI_API_KEY")
-    client = genai.Client(api_key=api_key)
+    client = _get_genai_client()
     try:
         response = client.models.embed_content(
             model="text-embedding-004",
@@ -63,19 +102,18 @@ def search_policies(query: str) -> str:
                 matches.append(f"Title: {p['title']}\nContent: {p['content']}")
         return "\n\n".join(matches) if matches else "No matching policies found."
 
+    policy_embs = _get_policy_embeddings()
     scored = []
-    for p in POLICIES:
+    for i, p in enumerate(POLICIES):
+        p_emb = policy_embs[i]
+        if p_emb is None:
+            continue
         try:
-            p_resp = client.models.embed_content(
-                model="text-embedding-004",
-                contents=p["content"]
-            )
-            p_emb = np.array(p_resp.embeddings[0].values)
             dot = np.dot(query_emb, p_emb)
             similarity = dot / (np.linalg.norm(query_emb) * np.linalg.norm(p_emb))
             scored.append((similarity, p))
         except Exception as e:
-            logger.error(f"Error embedding policy: {e}")
+            logger.error(f"Error scoring policy: {e}")
             
     scored.sort(key=lambda x: x[0], reverse=True)
     results = [f"Title: {item['title']}\nContent: {item['content']}" for sim, item in scored if sim >= 0.3]
@@ -118,6 +156,18 @@ def send_email(to_address: str, subject: str, body: str) -> str:
     print(f"Body: {body}")
     logger.info(f"SIMULATED EMAIL SENT TO {to_address}")
     return f"Email successfully sent to {to_address}."
+
+
+def mark_as_verified(name: str, booking_id: str, email: str) -> str:
+    """Internal tool to mark the guest as verified once all details are provided.
+    
+    Args:
+        name: Guest's full name.
+        booking_id: Booking confirmation number.
+        email: Guest's email address.
+    """
+    logger.info(f"EXECUTING mark_as_verified for {name}")
+    return f"VERIFICATION_SUCCESS: {name} (ID: {booking_id})"
 
 
 class VectorMemoryService(BaseMemoryService):
@@ -217,36 +267,102 @@ class VectorMemoryService(BaseMemoryService):
 
 
 # Instantiate Session and Memory services
-session_service = DatabaseSessionService(db_url="sqlite:///sessions.db")
+session_service = InMemorySessionService()
 memory_service = VectorMemoryService()
 
-# Define the companion agent
-companion_agent = LlmAgent(
+# 1. Verification Agent: Dedicated to identifying the guest.
+verification_agent = LlmAgent(
     model="gemini-2.5-flash",
-    name="companion_agent",
-    instruction="""You are the AI Companion, a warm, empathetic, and highly capable digital assistant. Your mission is to turn a stressful support experience into a seamless and reassuring journey for every guest.
-
-You guide guests through a simple, 6-step resolution path, ensuring they feel heard and valued at every turn:
-
-1. **Listen with Empathy:** When a guest shares a concern, acknowledge their feelings first. Let them know you're here to help.
-2. **Seamless Verification:** Gently ask for their full name, booking confirmation number, and email. Explain that this helps you retrieve their specific details to provide better service.
-3. **Smart Categorization:** Behind the scenes, use the `search_policies` tool to understand the situation's tier (0, 1, 2, or 3).
-4. **Tailored Resolutions:** Based on the policy, offer clear and fair compensation options. Explain the 'why' behind the offer to build trust.
-5. **Empowered Selection:** Let the guest choose the option that feels right for them.
-6. **Graceful Closing:** Confirm the details, express your sincere hope that the resolution helps, and close the ticket with a friendly note.
-
-**Key Guidelines:**
-* Always use `search_policies` to stay aligned with official guidelines.
-* For Tier 3 (Major Disruption) issues, you MUST use the `send_email` tool. Write the email with deep empathy, acknowledging the significant impact on their plans and clearly outlining the resolution.
-* Use `get_weather` or `get_stock_price` only if it adds a thoughtful, personal touch to the conversation.
-* Keep your tone professional yet approachable, and always prioritize the guest's peace of mind.
-""",
-    tools=[preload_memory, search_policies, send_email, get_weather, get_stock_price]
+    name="verification_agent",
+    instruction="""You are the Verification Assistant. Your sole mission is to verify the guest's identity.
+Gently ask for their full name, booking confirmation number, and email. 
+Explain that this is necessary to retrieve their details and provide accurate service.
+Once you have all three pieces of information, YOU MUST call the `mark_as_verified` tool to record the verification in the system state.
+ONLY after the tool returns success should you confirm verification to the user.
+Do not discuss policies or offer refunds yourself; focus only on identity verification. 
+If the user asks about their complaint, remind them that you first need to verify their identity.""",
+    tools=[mark_as_verified]
 )
 
-# Initialize the persistent Runner
+# 2. Resolution Agent: Dedicated to resolving complaints based on policies.
+resolution_agent = LlmAgent(
+    model="gemini-2.5-flash",
+    name="resolution_agent",
+    instruction="""You are the Resolution Specialist. You handle guests who have already been verified.
+Your goal is to guide the guest through a fair resolution process:
+1. **Listen & Categorize:** Use `search_policies` to understand the complaint tier (0-3).
+2. **Offer Options:** Based on the policy, provide clear and empathetic compensation choices.
+3. **Confirm & Execute:** Once chosen, confirm details. For Tier 3, you MUST use `send_email`.
+4. **Graceful Closing:** End the interaction with a friendly, reassuring note.
+
+Always refer to the guest by the name stored in the session state if available.
+Keep your tone warm, professional, and solution-oriented.""",
+    tools=[search_policies, send_email, get_weather, get_stock_price]
+)
+
+class CompanionWorkflow(BaseAgent):
+    """Custom orchestrator that routes between Verification and Resolution agents."""
+    
+    verification_agent: LlmAgent
+    resolution_agent: LlmAgent
+    
+    model_config = {"arbitrary_types_allowed": True}
+
+    def __init__(self, name: str, verification_agent: LlmAgent, resolution_agent: LlmAgent):
+        super().__init__(
+            name=name,
+            verification_agent=verification_agent,
+            resolution_agent=resolution_agent,
+            sub_agents=[verification_agent, resolution_agent]
+        )
+
+    @override
+    async def _run_async_impl(self, ctx: InvocationContext) -> AsyncGenerator[Event, None]:
+        # Check if guest is already verified in this session
+        session_key = f"{ctx.session.app_name}_{ctx.session.user_id}_{ctx.session.id}"
+        is_verified = ctx.session.state.get("is_verified", False) or session_key in VERIFIED_SESSIONS
+        
+        # Double check history
+        if not is_verified:
+            for event in ctx.session.events:
+                if event.content and event.content.parts:
+                    for part in event.content.parts:
+                        if part.text and "VERIFICATION_SUCCESS" in part.text:
+                            logger.info(f"[{self.name}] Verification detected in history. Updating state.")
+                            ctx.session.state["is_verified"] = True
+                            VERIFIED_SESSIONS.add(session_key)
+                            is_verified = True
+                            break
+                if is_verified: break
+
+        logger.info(f"[{self.name}] Current verification state: {is_verified} for {session_key}")
+        
+        if not is_verified:
+            logger.info(f"[{self.name}] Routing to VerificationAgent.")
+            async for event in self.verification_agent.run_async(ctx):
+                # Update state immediately if tool response is seen in the stream
+                if event.content and event.content.parts:
+                    for part in event.content.parts:
+                        if part.text and "VERIFICATION_SUCCESS" in part.text:
+                            logger.info(f"[{self.name}] Verification detected in stream. Updating state.")
+                            ctx.session.state["is_verified"] = True
+                            VERIFIED_SESSIONS.add(session_key)
+                yield event
+        else:
+            logger.info(f"[{self.name}] Guest verified. Routing to ResolutionAgent.")
+            async for event in self.resolution_agent.run_async(ctx):
+                yield event
+
+# Instantiate the workflow agent
+companion_workflow = CompanionWorkflow(
+    name="companion_workflow",
+    verification_agent=verification_agent,
+    resolution_agent=resolution_agent
+)
+
+# Initialize the persistent Runner with the workflow agent
 runner = Runner(
-    agent=companion_agent,
+    agent=companion_workflow,
     app_name="Demo_App",
     session_service=session_service,
     memory_service=memory_service
