@@ -1,50 +1,118 @@
-- 👋 Hi, I’m @sanjeevm16
-- 👀 Add the GDG event AI-enabled customer support agent to resolve complaints faster, reduce team workload, and improve overall experience
-- The agent handles guest complaints 
+# 👋 Welcome to My GitHub Profile
 
-The flow is simple and extendible for multiple industries and policies.
-This flow can get as complex as possible for industry-specific needs and flows and requires a detailed design catering to the needs.
-Guests receive a responsive, guided experience while the system handles verification, categorization, and resolution behind the scenes. 
+Hi, I'm **@sanjeevm16** – AI & ML enthusiast building intelligent systems for enterprise applications.
 
-1. Guest submits a complaint. The guest opens a chat session and shares their concern in their own words. 
+## 🤖 AI & ML Projects
 
-2. Agent verifies identity. The system confirms the guest's identity and retrieves any open case details automatically. 
+I'm actively developing cutting-edge AI projects focused on **autonomous agents**, **enterprise solutions**, and **intelligent automation**.
 
-3. The agent categorizes the complaint based on the nature of the issue; the agent assigns one of four resolution tiers. 
+### Featured AI Projects
 
-4. Agent offers a resolution. A resolution is proposed based on the case details and the appropriate compensation tier. 
+#### 1. **GDG Event: AI-Enabled Customer Support Agent**
+**Status:** Core Project | **Year:** 2026
 
-5. The guest selects their preferred option. The guest chooses the resolution that works best for their situation. 
+An intelligent complaint resolution system built for resolving guest complaints faster, reducing team workload, and improving overall experience. The agent handles guest complaints through a guided, multi-tier resolution workflow.
 
-6. Case is closed, the agent confirms the selection, finalizes the case, and closes the ticket seamlessly.
-Every complaint is classified into one of four tiers, ensuring the response is always proportionate and fair. 
+**Key Features:**
+- **Intelligent Identity Verification**: Automatically confirms guest identity and retrieves open case details
+- **Smart Categorization**: Classifies complaints into four resolution tiers based on severity
+- **Automated Resolution**: Proposes proportionate resolutions based on tier classification
+- **Guest-Centric Design**: Responsive, guided experience with guest preference selection
+- **Seamless Case Closure**: Finalizes cases and closes tickets automatically
 
-Tier 0 
+**Resolution Tiers:**
+- **Tier 0**: Minor preference issues with minimal impact
+- **Tier 1**: Minor inconveniences (e.g., delayed activity start)
+- **Tier 2**: Moderate disruptions (booking errors, service dissatisfaction)
+- **Tier 3**: Major disruptions (activity cancellations, significant guest impact)
 
-Minor preference 
+**Industry Applicability:** Highly extensible for multiple industries and policies. The flow is designed to scale with industry-specific needs while maintaining core intelligent automation principles.
 
-Small disruptions based on personal guest preference with minimal overall impact. 
+---
 
-Tier 1 
+#### 2. **Multi-Agent Chat System**
+**Repository:** [multi_agent_chat](https://github.com/sanjeevm16/multi_agent_chat)  
+**Status:** In Development | **Created:** August 2026  
+**Last Updated:** August 28, 2026
 
-Minor inconvenience 
+A sophisticated multi-agent communication framework enabling collaborative problem-solving through autonomous agents. This system explores how multiple AI agents can work together, coordinate tasks, and communicate efficiently.
 
-Small disruptions, such as a delayed activity start time. 
+**Key Capabilities:**
+- Multi-agent orchestration and coordination
+- Inter-agent communication protocols
+- Collaborative task resolution
+- Extensible agent framework
 
-Tier 2 
+---
 
-Moderate disruption 
+#### 3. **Enterprise Network Scan MCP Server (nwscan)**
+**Repository:** [nwscan](https://github.com/sanjeevm16/nwscan)  
+**Language:** Python | **Status:** Active  
+**Created:** June 24, 2026 | **Last Updated:** August 27, 2026
 
-Booking errors or noticeable service dissatisfaction. 
+An enterprise-grade network scanning MCP (Model Context Protocol) server designed for secure, scalable network reconnaissance and monitoring.
 
-Tier 3 
+**Purpose:**
+- Comprehensive network scanning and analysis
+- Enterprise network topology mapping
+- Integration with AI agents for intelligent network management
+- Model Context Protocol compliance for AI integration
 
-Major disruption 
+---
 
-Activity cancellations or situations with significant guest impact.
-- 📫 How to reach me sanjeev.mehrotra@gmail.com
+#### 4. **AdVisualizer**
+**Repository:** [advisualizer](https://github.com/sanjeevm16/advisualizer)  
+**Language:** Python | **Status:** Active  
+**Created:** June 20, 2026 | **Last Updated:** August 27, 2026
 
-<!---
-sanjeevm16/sanjeevm16 is a ✨ special ✨ repository because its `README.md` (this file) appears on your GitHub profile.
-You can click the Preview link to take a look at your changes.
---->
+An advanced visualization tool leveraging AI for data analysis and presentation. Enables intelligent insights generation and visual storytelling.
+
+---
+
+## 💼 Other Notable Projects
+
+| Project | Language | Description |
+|---------|----------|-------------|
+| [Finance Tracker](https://github.com/sanjeevm16/fiancetracker) | TypeScript | Personal finance tracking application |
+| [File Comparator](https://github.com/sanjeevm16/filecomparator) | Java | MD5 digest-based file and directory comparison |
+
+---
+
+## 🎯 Research & Development Focus
+
+- **Autonomous Agents**: Building intelligent systems that can operate independently
+- **Multi-Agent Systems**: Exploring agent collaboration and coordination
+- **Enterprise AI**: Scaling AI solutions for business applications
+- **AI for Customer Service**: Applying AI to improve customer experience
+- **Network Intelligence**: Intelligent network management and security
+
+---
+
+## 🛠️ Tech Stack
+
+- **AI/ML**: LLMs, Autonomous Agents, Multi-Agent Systems
+- **Languages**: Python, TypeScript, Java, C++
+- **Platforms**: GitHub, Enterprise Solutions
+- **Protocols**: Model Context Protocol (MCP)
+- **Domains**: Customer Support, Network Management, Finance
+
+---
+
+## 📫 Get in Touch
+
+📧 Email: sanjeev.mehrotra@gmail.com  
+🔗 GitHub: [@sanjeevm16](https://github.com/sanjeevm16)  
+💼 LinkedIn: [Available upon request]
+
+---
+
+## 🌟 Key Highlights
+
+✨ **AI-First Development**: All projects incorporate AI and automation principles  
+🚀 **Enterprise Focus**: Building production-ready solutions for real-world challenges  
+🔄 **Scalable Design**: Systems designed to grow with business needs  
+🤝 **Extensible Architecture**: Frameworks built for easy integration and customization  
+
+---
+
+**⭐ Feel free to explore my projects, contribute, and reach out for collaboration opportunities!**
